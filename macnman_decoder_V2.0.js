@@ -3,11 +3,15 @@
  * Macnman Technologies Pvt.Ltd
  * Writen By : MACNMAN
  * 
- */
+ **/
 //console.log(Decoder(data));
 //console.log(decodeUplink(data));
 //console.log(convertToSenML(Decoder(data)));
 // decoding uploaded data
+
+//
+var fieldNames = ["level","temperature","humidity","pressure","windspeed","winddirection","rainfall","snowfall","co2","pm2.5","levelmm","levelcm","levelm3"]; 
+//
 function decodeUplink(input) {
     return {
         data: {
@@ -35,20 +39,16 @@ function Decoder(bytes, port) {
     const devTypes = {
         0: "RS485_Node",
         1: "Analog_Node",
-        2: "RS485_Relay_Controller",
-        3: "Analog_Relay_Controller",
-        10: "Temperature Humidity Node",
-        11: "Level Sensor A02YYUW",
-        15: "Light Sensor B_LUX_V30B",
+        2: "RS485_Controller",
+        3: "Analog_Controller",
+        16: "MacSense_V2.0",
     };
     const dataParsers = {
         0: getRS485Data,
         1: getAnalogData,
         2: getRS485Data,
         3: getAnalogData,
-        10: getTempHumiData,
-        11: getLevelSensorData,
-        15: getLightSensorData,
+        16: getMacSenseData,
     };
     const devType = devTypes[bytes[1]];
     if (devType) {
@@ -67,6 +67,9 @@ function Decoder(bytes, port) {
                     break;
                 case 3:
                     decode.alarm = parser(bytes);
+                    break;
+                case 4:
+                    decode.samples = parser(bytes);
                     break;
                 default:
                     break;
@@ -205,7 +208,7 @@ function decodeByte(encodedByte) {
     };
 }
 //
-function decodeUplinkBytes(bytes) {
+function decodeUplinkBytes(bytes, isResponce) {
     const rs485_data = {
         messageType: "Payload"
     };
@@ -325,7 +328,7 @@ function decodeUplinkBytes(bytes) {
 
     return rs485_data;
 }
-// 
+// fucntion for decoding responces.
 function decodeResponce(bytes) {
     var responceData = {};
     var fieldIndex = 1;
@@ -399,13 +402,17 @@ function decodeResponce(bytes) {
                 responceData.parity = bytes[++fieldIndex];
                 responceData.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
                 break;
+            case 13: // responce of reading baudrate.
+                responceData.values = decodeUplinkBytes(bytes.slice(2));
+                responceData.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
+                break;
             default:
                 break;
         }
     }
     return responceData;
 }
-// decode Alarm
+// decode Alarm.
 function decodeAlarm(bytes) {
     var trigger_data = {};
     var fieldIndex = 2;
@@ -491,12 +498,12 @@ function decodeAlarm(bytes) {
     }
     return trigger_data;
 }
-//  function for decoding rs485 sensor
+//  function for decoding rs485 sensor.
 function getRS485Data(bytes) {
     if (bytes[0] === 0) {
         return decodeBootMessage(bytes); // decode boot message bytes
     } else if (bytes[0] == 0x01) {
-        return decodeUplinkBytes(bytes); // decode payload bytes
+        return decodeUplinkBytes(bytes,0); // decode payload bytes
     } else if (bytes[0] == 0x02) {
         return decodeResponce(bytes); // decodes responce bytes
     } else if (bytes[0] == 0x03) {
@@ -504,7 +511,7 @@ function getRS485Data(bytes) {
     }
     return "Error";
 }
-// returns a float value from 4 bytes
+// returns a float value from 4 bytes.
 function GetFloat(dataBytes, isMsb) {
     // Create a new ArrayBuffer with 4 bytes of data
     const buffer = new ArrayBuffer(4);
@@ -524,7 +531,7 @@ function GetFloat(dataBytes, isMsb) {
     view.setUint8(1, dataBytes[startbit++]); // Byte 1
     return view.getFloat32(0, false); // true indicates little-endian byte order
 }
-// returns a float value from 4 bytes
+// returns a float value from 4 bytes.
 function GetLongInt(dataBytes, isMsb) {
     // Create a new ArrayBuffer with 4 bytes of data
     const buffer = new ArrayBuffer(4);
@@ -544,61 +551,75 @@ function GetLongInt(dataBytes, isMsb) {
     view.setUint8(1, dataBytes[startbit++]); // Byte 1
     return view.getInt32(0, false); // true indicates little-endian byte order
 }
-// returns data for temperature humididity node
-function getTempHumiData(bytes) {
-    if (bytes[0] === 0) {
-        return decodeBootMessage(bytes); // decode boot message bytes
-    } else if (bytes[0] == 1) {
-        var payload_data = {};
-        var fieldIndex = 1;
-        payload_data.messageType = "Payload";
-        payload_data.temperature = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
-        payload_data.humidity = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
-        payload_data.pressure = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
-        payload_data.battery = ((bytes[++fieldIndex]) / 10);
-        payload_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
-        return payload_data;
-    }
+// returns a float value from 4 bytes.
+function GetFloatFromBytes(byteArray, isLittleEndian = 1) {
+    return new DataView(Uint8Array.from(byteArray).buffer).getFloat32(0, isLittleEndian === 1);
 }
-// returns data for level sensor
-function getLevelSensorData(bytes) {
-    if (bytes[0] === 0) {
-        return decodeBootMessage(bytes); // decode boot message bytes
-    } else if (bytes[0] == 1) {
-        var payload_data = {};
-        var fieldIndex = 1;
-        payload_data.messageType = "Payload";
-        payload_data.levelcm = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
-        payload_data.inverceLevel = 450 - payload_data.levelcm;
-        payload_data.sensingDistance = 450.01;
-        payload_data.levelmm = payload_data.levelcm * 10;
-        payload_data.battery = ((bytes[++fieldIndex]) / 10);
-        payload_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
-        return payload_data;
+// for decoding data from new sensors with its id.
+function decodeSamplingData(bytes){
+    var sampleData = {};
+    let byteIndex = 1;
+    fieldIndex = 1;
+    const loopCount = (bytes.length) - 8;
+    sampleData.parameter = fieldNames[bytes[++byteIndex]];
+    sampleData.noofsamples = bytes[++byteIndex];
+    for (byteIndex = 3; byteIndex <= loopCount; byteIndex) {
+        const key = `${sampleData.parameter}${fieldIndex++}`;
+        if(bytes[byteIndex]!=0xFF){sampleData[key] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3))}else{sampleData[key] = "Error";++byteIndex}
     }
+    sampleData.battery = ((bytes[++byteIndex]) / 10);
+    sampleData.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
+    return sampleData;
 }
-// returns light sensor data only
-function getLightSensorData(bytes) {
-    if (bytes[0] === 0) {
-        return decodeBootMessage(bytes); // decode boot message bytes
-    } else if (bytes[0] == 1) {
-        var payload_data = {};
-        var fieldIndex = 3;
-        payload_data.messageType = "Payload";
-        if (bytes[2] === 0) {
-            payload_data.lux = "Error";
-            payload_data.batt = bytes[fieldIndex] / 10;
-            payload_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
+// for decoding data from new sensors with its id.
+function decodeTrigerData(bytes){
+    var triggerData = {};
+    var byteIndex = 1;
+    triggerData.threshould1 = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3));
+    triggerData[fieldNames[bytes[++byteIndex]]] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3));
+    triggerData.threshould2 = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3));
+    triggerData.battery = ((bytes[++byteIndex]) / 10);
+    triggerData.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
+    return triggerData;
+
+}
+// Returns parameter and its value.
+function getSensorData(bytes) {
+    var sensorData = {};
+    const loopCount = (bytes.length) - 6;
+    const fieldCounters = {}; 
+    let byteIndex;
+    for (byteIndex = 2; byteIndex <= loopCount; ++byteIndex) { 
+        let fieldName = fieldNames[bytes[byteIndex]];
+        if (!fieldCounters[fieldName]) {
+            fieldCounters[fieldName] = 1;
+            if(bytes[byteIndex]!=0xFF){sensorData[fieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3))}else{sensorData[fieldName] = "Error";++byteIndex} 
         } else {
-            payload_data.rawData = (bytes[fieldIndex] << 24) + ((bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex]);
-            payload_data.lux = ((payload_data.rawData * 1.4) / 1000);
-            payload_data.batt = bytes[++fieldIndex] / 10;
-            payload_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
+            fieldCounters[fieldName]++;
+            const indexedFieldName = `${fieldName}${fieldCounters[fieldName]}`;
+            if(bytes[byteIndex]!=0xFF){sensorData[indexedFieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3))}else{sensorData[indexedFieldName] = "Error";++byteIndex}
         }
-        return payload_data;
     }
+    sensorData.battery = ((bytes[byteIndex]) / 10);
+    sensorData.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
+    return sensorData;
 }
-// downlink Encoder
+// for decoding data from new sensors with its id.
+function getMacSenseData(bytes){  
+    if (bytes[0] === 0) {
+        return decodeBootMessage(bytes); // decode boot message bytes
+    }else if(bytes[0] == 1){
+        return getSensorData(bytes);
+    }else if(bytes[0] == 2){
+        return decodeResponce(bytes);
+    }else if(bytes[0] == 3){
+        return decodeTrigerData(bytes);
+    }else if(bytes[0] == 4){
+        return decodeSamplingData(bytes);
+    }
+
+}
+// downlink Encoder.
 function encodeDownlink(input) {
     const portNumber = input.fPort;
     let bytes = [];
@@ -610,12 +631,12 @@ function encodeDownlink(input) {
                 input.data.txTime & 0xFF,
             );
             break;
-        case 5: // for tx time
+        case 5: // for controlling relays time
                 const relay1 = input.data.relay1 !== undefined ? input.data.relay1 : 0x03;
                 const relay2 = input.data.relay2 !== undefined ? input.data.relay2 : 0x03;
                 bytes.push(relay1, relay2);
             break;
-        case 8: // for coils
+        case 8: // for writing coils
             bytes.push(
                 input.data.slaveId, // 1 byte
                 input.data.numberofreg, // 1 byte
@@ -637,7 +658,7 @@ function encodeDownlink(input) {
                 );
             }
             break;
-        case 9: // for resistors
+        case 9: // for write resistors
             bytes.push(
                 input.data.slaveId, // 1 byte
                 input.data.numberofreg, // 1 byte
@@ -671,7 +692,7 @@ function encodeDownlink(input) {
                 input.data.Registeraddress & 0xFF // Low byte of Registeraddress
             );
             break;
-        case 11: // 
+        case 11: //   normal alarm
             bytes.push(
                 input.data.index, // 1 byte: Index
                 (input.data.startTime >> 24) & 0xFF, // 4 bytes: startTime
@@ -687,7 +708,6 @@ function encodeDownlink(input) {
                 input.data.triggerType, // 1 byte: Trigger Type
                 input.data.enable // 1 byte: Enable
             );
-
             switch (input.data.triggerType) {
                 case 2: // Cyclic Alarm
                     bytes.push(
@@ -720,6 +740,26 @@ function encodeDownlink(input) {
                 (input.data.baud >> 8) & 0xFF,
                 input.data.baud & 0xFF,
                 input.data.pairity // 1 byte: Parity
+            );
+            break;
+        case 13: // read modbus resistor value
+             bytes.push(
+                input.data.slaveId, // 1 byte
+                input.data.functionCode, // 1 byte
+                input.data.dataType, //byte of dataType
+                input.data.numberOfParameters, // 1 byte
+                (input.data.Registeraddress >> 8) & 0xFF, // High byte of Registeraddress
+                input.data.Registeraddress & 0xFF // Low byte of Registeraddress
+            );
+            break;
+        case 14: // reading alarm config
+            bytes.push(
+                input.data.index
+            );
+            break;
+        case 15: // reading rs485 configration
+            bytes.push(
+                input.data.index
             );
             break;
         default:
