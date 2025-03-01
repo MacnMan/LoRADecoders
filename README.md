@@ -85,7 +85,7 @@ This payload is used for reading RS485 data from a Modbus device.
 To write to a Modbus register, specify the slave ID, register address, and value.
 
 **Examples:**
-- **Writing to a register:**
+- **Writing to a register (FPort: 9)::**
   ```json
   {
       "slaveId": 4,
