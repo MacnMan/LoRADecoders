@@ -8,7 +8,7 @@
 
 ---
 
-## 1. Changing Transmission Interval Time
+## 1. Changing Transmission Interval Time (FPort: 06)
 To modify the transmission interval time of a LoRaWAN device, convert the desired time to seconds and send the payload.
 
 **Example:** To set the interval to **10 minutes** (600 seconds):
@@ -20,7 +20,7 @@ To modify the transmission interval time of a LoRaWAN device, convert the desire
 
 ---
 
-## 2. Controlling Device Relays
+## 2. Controlling Device Relays (FPort: 05)
 This payload is used to turn on or off relays in both **single-phase** and **three-phase** applications:
 - **Single-phase:** Relay1 and Relay2 control independent loads.
 - **Three-phase:** Relay1 controls the entire three-phase application.
@@ -106,7 +106,7 @@ To write to a Modbus register, specify the slave ID, register address, and value
 
 ---
 
-## 5. Alarm Configurations
+## 5. Alarm Configurations (FPort: 11)
 ### 5.1 Regular Alarm
 ```json
 {
