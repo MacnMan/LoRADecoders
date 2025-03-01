@@ -151,7 +151,14 @@ To write to a Modbus register, specify the slave ID, register address, and value
 }
 ```
 
-### 5.4 Reading an Alarm Configuration
+### 5.4 Reading an Alarm Configuration (FPort: 14)
+```json
+{
+    "index": 1
+}
+```
+
+### 5.4 Reading an Modbus Configuration (FPort: 15)
 ```json
 {
     "index": 1
