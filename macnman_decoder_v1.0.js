@@ -154,7 +154,24 @@ function Decoder(bytes, port) {
                 break;
         }
 
-    }else if (devInfo.devType === 15) { // if message type is payload and devType is analog device
+    }else if (devInfo.devType === 12) { // if message type is payload and devType is analog device
+        decode.devType = "CO2";
+        decode.manufacturer = "Macnman India";
+        decode.protocall = "LoRaWAN";
+        decode.uplinkPort = port;
+        decode.deviceID = bytes[1];
+        switch (bytes[0]) {
+            case 0:
+                decode.boot = getCo2SensorData(bytes);
+                break;
+            case 1:
+                decode.payload = getCo2SensorData(bytes);
+                break;
+            default:
+                break;
+        }
+
+    } else if (devInfo.devType === 15) { // if message type is payload and devType is analog device
         decode.devType = "Light Sensor B_LUX_V30B";
         decode.manufacturer = "Macnman India";
         decode.protocall = "LoRaWAN";
@@ -586,6 +603,30 @@ function getLevelSensorData(bytes) {
         payload_data.inverceLevel = 450 - payload_data.levelcm;
         payload_data.sensingDistance = 450.01;
         payload_data.levelmm = payload_data.levelcm * 10;
+        payload_data.battery = ((bytes[++fieldIndex]) / 10);
+        payload_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
+        return payload_data;
+    }
+}
+// returns data for level sensor
+function getCo2SensorData(bytes) {
+    if (bytes[0] === 0) {
+        var boot_data = {};
+        var fieldIndex = 1;
+        boot_data.messageType = "Boot Message";
+        boot_data.OEM_ID = str_pad(bytes[++fieldIndex]) + str_pad(bytes[++fieldIndex]) + str_pad(bytes[++fieldIndex]) + str_pad(bytes[++fieldIndex]);
+        boot_data.FR = str_pad(bytes[++fieldIndex]) + "." + str_pad(bytes[++fieldIndex]) + "." + str_pad(bytes[++fieldIndex]);
+        boot_data.HW = str_pad(bytes[++fieldIndex]) + "." + str_pad(bytes[++fieldIndex]) + "." + str_pad(bytes[++fieldIndex]);
+        boot_data.TDCM = (bytes[++fieldIndex] << 8 | bytes[++fieldIndex]); //millisec
+        boot_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
+        return boot_data;
+    } else if (bytes[0] == 1) {
+        var payload_data = {};
+        var fieldIndex = 1;
+        payload_data.messageType = "Payload";
+        payload_data.temperature = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
+        payload_data.humidity = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
+        payload_data.co2 = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 10);
         payload_data.battery = ((bytes[++fieldIndex]) / 10);
         payload_data.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
         return payload_data;
