@@ -18,6 +18,10 @@ function decodeUplink(input) {
     };
 }
 
+function toSigned16(unsignedValue) {
+  return (unsignedValue & 0x8000) ? -(0x10000 - unsignedValue) : unsignedValue;
+}
+
 function Decoder(bytes, port) {
     var payloadData = {
         // "event": 0,
@@ -25,15 +29,16 @@ function Decoder(bytes, port) {
         // "device": "ParkOMate_LWAN_V1.0",
     }
     var dataIndex = 0;
-    payloadData.xOffset = (bytes[dataIndex++] << 8) + bytes[dataIndex++];
-    payloadData.yOffset = (bytes[dataIndex++] << 8) + bytes[dataIndex++];   
-    payloadData.zOffset = (bytes[dataIndex++] << 8) + bytes[dataIndex++];
-    payloadData.xData = (bytes[dataIndex++] << 8) + bytes[dataIndex++];
-    payloadData.yData = (bytes[dataIndex++] << 8) + bytes[dataIndex++];
-    payloadData.zData = (bytes[dataIndex++] << 8) + bytes[dataIndex++]; 
-    payloadData.xDiff = payloadData.xData - payloadData.xOffset;
-    payloadData.yDiff = payloadData.yData - payloadData.yOffset;    
-    payloadData.zDiff = payloadData.zData - payloadData.zOffset;
+    // payloadData.xOffset = (bytes[dataIndex++] << 8) + bytes[dataIndex++];
+    payloadData.xOffset = toSigned16((bytes[dataIndex++] << 8) | bytes[dataIndex++]);
+    payloadData.yOffset = toSigned16((bytes[dataIndex++] << 8) | bytes[dataIndex++]);   
+    payloadData.zOffset = toSigned16((bytes[dataIndex++] << 8) | bytes[dataIndex++]);
+    payloadData.xData = toSigned16((bytes[dataIndex++] << 8) | bytes[dataIndex++]);
+    payloadData.yData = toSigned16((bytes[dataIndex++] << 8) | bytes[dataIndex++]);
+    payloadData.zData = toSigned16((bytes[dataIndex++] << 8) | bytes[dataIndex++]);
+    // payloadData.xDiff = payloadData.xData - payloadData.xOffset;
+    // payloadData.yDiff = payloadData.yData - payloadData.yOffset;    
+    // payloadData.zDiff = payloadData.zData - payloadData.zOffset;
     payloadData.Systimestamp = (bytes[dataIndex++] << 24) + (bytes[dataIndex++] << 16) + (bytes[dataIndex++] << 8) + bytes[dataIndex++];
     return payloadData;
 }
