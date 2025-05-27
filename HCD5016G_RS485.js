@@ -319,8 +319,8 @@ function decodeUplinkBytes(bytes, isResponce) {
 
     //
     HCD5016_Data.temperature = parseFloat(((rs485_data.field1[0] / 100) - 40).toFixed(2));
-    HCD5016_Data.humidity = parseFloat(((rs485_data.field1[0])/100).toFixed(2));
-    HCD5016_Data.Illuminance = parseFloat(((rs485_data.field1[0])*100).toFixed(2));
+    HCD5016_Data.humidity = parseFloat(((rs485_data.field1[1])/100).toFixed(2));
+    HCD5016_Data.Illuminance = parseFloat(((rs485_data.field1[2])*100).toFixed(2));
     //
 
     if (bytes[1] === 2) {
@@ -334,7 +334,6 @@ function decodeUplinkBytes(bytes, isResponce) {
             rs485_data.controller.status = bytes[loopCount + 2] ? "on" : "off";
         }
     }
-
     return HCD5016_Data;
 }
 // fucntion for decoding responces.
