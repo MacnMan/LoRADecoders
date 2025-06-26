@@ -1,13 +1,15 @@
 /**
- * LoRaWAN Decoder V3.0 for LoRaWAN Controllers and Nodes
+ * LoRaWAN Decoder V4.0 for LoRaWAN Controllers and Nodes
  * Macnman Technologies Pvt.Ltd
  * Writen By : MACNMAN
  * 
  **/
-//console.log(Decoder(data));
-//console.log(decodeUplink(data));
-//console.log(convertToSenML(Decoder(data)));
-// decoding uploaded data
+// const data = [
+// 0x01, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0x68, 0x5A, 0x46, 0xE9
+// ];
+
+// console.log(decodeUplink({ bytes: data , port: 1 }));
+// console.dir(decodeUplink({ bytes: data , port: 1 }),{ depth: null });
 const devTypes = {
     0: "RS485_Node",
     1: "Analog_Node",
@@ -15,9 +17,8 @@ const devTypes = {
     3: "Analog_Controller",
     16: "MacSense_V2.0",
 };
-
 //
-var fieldNames = ["level","temperature","humidity","pressure","windspeed","winddirection","rainfall","snowfall","co2","pm2.5","levelmm","levelcm","levelm3"]; 
+var fieldNames = ["level", "temperature", "humidity", "pressure", "windspeed", "winddirection", "rainfall", "snowfall", "co2", "pm2.5", "levelmm", "levelcm", "levelm3"];
 //
 function decodeUplink(input) {
     return {
@@ -56,7 +57,7 @@ function Decoder(bytes, port) {
                     break;
                 case 1:
                     decode.payload = parser(bytes);
-                    decode.deviceinfo = getDeviceinfo(bytes,port);
+                    decode.deviceinfo = getDeviceinfo(bytes, port);
                     break;
                 case 2:
                     decode.responce = parser(bytes);
@@ -75,14 +76,13 @@ function Decoder(bytes, port) {
     return decode;
 }
 //
-function getDeviceinfo(bytes,port){
-
+function getDeviceinfo(bytes, port) {
     var devInfo = {};
-    devInfo.manufacturer ="Macnman India",
-    devInfo.protocall = "LoRaWAN",
-    devInfo.uplinkPort = port,
-    devInfo.deviceID = bytes[1],
-    devInfo.devType = devTypes[bytes[1]];
+    devInfo.manufacturer = "Macnman India",
+        devInfo.protocall = "LoRaWAN",
+        devInfo.uplinkPort = port,
+        devInfo.deviceID = bytes[1],
+        devInfo.devType = devTypes[bytes[1]];
     byteIndex = bytes.length - 6;
     devInfo.battery = ((bytes[++byteIndex]) / 10);
     devInfo.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
@@ -226,108 +226,74 @@ function decodeUplinkBytes(bytes, isResponce) {
     const loopCount = bytes[1] <= 1 ? bytes.length - 6 : bytes.length - 8;
     for (let byteIndex = 2; byteIndex <= loopCount; ++byteIndex) {
         const key = `field${fieldIndex}`;
-
         let dataType, numberOfParameter;
 
-        if (bytes[byteIndex] < 0x0C) {
-            dataType = bytes[byteIndex];
-            numberOfParameter = 1;
-        } else {
-            const decoded = decodeByte(bytes[byteIndex]);
-            dataType = decoded.dataType;
-            numberOfParameter = decoded.numRegisters;
-        }
+        const decoded = decodeByte(bytes[byteIndex]);
 
-        if (numberOfParameter === 1) {
-            switch (dataType) {
-                case 0:
-                    const unsignedValue = (bytes[++byteIndex] << 8) | bytes[++byteIndex];
-                    rs485_data[key] = (unsignedValue & 0x8000) ? -(0x10000 - unsignedValue) : unsignedValue;
-                    break;
-                case 1:
-                    rs485_data[key] = (bytes[++byteIndex] << 8) | bytes[++byteIndex];
-                    break;
-                case 2:
-                case 3:
-                    const isReversed = dataType === 3;
-                    rs485_data[key] = parseFloat(
+        dataType = decoded.dataType;
+        numberOfParameter = decoded.numRegisters;
+        const params = [];
+        switch (dataType) {
+            case 0:
+                for (let i = 0; i < numberOfParameter; i++) {
+                    const value = (bytes[++byteIndex] << 8) | bytes[++byteIndex];
+                    params.push((value & 0x8000) ? -(0x10000 - value) : value);
+                }
+                rs485_data[key] = (numberOfParameter === 1) ? params[0] : params;
+                break;
+
+            case 1:
+                for (let i = 0; i < numberOfParameter; i++) {
+                    params.push((bytes[++byteIndex] << 8) | bytes[++byteIndex]);
+                }
+                rs485_data[key] = (numberOfParameter === 1) ? params[0] : params;
+                break;
+
+            case 2:
+            case 3:
+                const isReversed = dataType === 3;
+                for (let i = 0; i < numberOfParameter; i++) {
+                    const floatVal = parseFloat(
                         GetLongInt(
                             [bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],
                             isReversed ? 0 : 1
                         ).toFixed(3)
                     );
-                    break;
-                case 4:
-                case 5:
-                    const reverseFloat = dataType === 5;
-                    rs485_data[key] = parseFloat(
+                    params.push(floatVal);
+                }
+                rs485_data[key] = (numberOfParameter === 1) ? params[0] : params;
+                break;
+
+            case 4:
+            case 5:
+                const reverseFloat = dataType === 5;
+                for (let i = 0; i < numberOfParameter; i++) {
+                    const floatVal = parseFloat(
                         GetFloat(
                             [bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],
                             reverseFloat ? 0 : 1
                         ).toFixed(3)
                     );
-                    break;
-                case 10:
-                    rs485_data[key] = "Slave Error";
-                    break;
-                case 11:
-                    rs485_data[key] = "Disabled";
-                    break;
-            }
-        } else {
-            const params = [];
-            switch (dataType) {
-                case 0:
-                    for (let i = 0; i < numberOfParameter; i++) {
-                        const value = (bytes[++byteIndex] << 8) | bytes[++byteIndex];
-                        params.push((value & 0x8000) ? -(0x10000 - value) : value);
-                    }
-                    break;
-                case 1:
-                    for (let i = 0; i < numberOfParameter; i++) {
-                        params.push((bytes[++byteIndex] << 8) | bytes[++byteIndex]);
-                    }
-                    break;
-                case 2:
-                case 3:
-                    const isReversed = dataType === 3;
-                    for (let i = 0; i < numberOfParameter; i++) {
-                        params.push(parseFloat(
-                            GetLongInt(
-                                [bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],
-                                isReversed ? 0 : 1
-                            ).toFixed(3)
-                        ));
-                    }
-                    break;
-                case 4:
-                case 5:
-                    const reverseFloat = dataType === 5;
-                    for (let i = 0; i < numberOfParameter; i++) {
-                        params.push(parseFloat(
-                            GetFloat(
-                                [bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],
-                                reverseFloat ? 0 : 1
-                            ).toFixed(3)
-                        ));
-                    }
-                    break;
-                case 10:
-                    rs485_data[key] = "Slave Error";
-                    break;
-                case 11:
-                    rs485_data[key] = "Disabled";
-                    break;
-            }
-            rs485_data[key] = params;
+                    params.push(floatVal);
+                }
+                rs485_data[key] = (numberOfParameter === 1) ? params[0] : params;
+                break;
+
+            case 6:
+                rs485_data[key] = "Disabled";
+                break;
+
+            case 7:
+                rs485_data[key] = "Slave Error";
+                break;
         }
+
         fieldIndex++;
     }
 
     if (bytes[1] === 2) {
         rs485_data.controller = {};
         rs485_data.controller.appType = bytes[loopCount + 1] ? "Three Phase" : "Single Phase";
-
         if (bytes[loopCount + 1] === 0) {
             rs485_data.controller.r1Status = bytes[loopCount + 2] ? "on" : "off";
             rs485_data.controller.r2Status = bytes[loopCount + 3] ? "on" : "off";
@@ -512,7 +478,7 @@ function getRS485Data(bytes) {
     if (bytes[0] === 0) {
         return decodeBootMessage(bytes); // decode boot message bytes
     } else if (bytes[0] == 0x01) {
-        return decodeUplinkBytes(bytes,0); // decode payload bytes
+        return decodeUplinkBytes(bytes, 0); // decode payload bytes
     } else if (bytes[0] == 0x02) {
         return decodeResponce(bytes); // decodes responce bytes
     } else if (bytes[0] == 0x03) {
@@ -565,7 +531,7 @@ function GetFloatFromBytes(byteArray, isLittleEndian = 1) {
     return new DataView(Uint8Array.from(byteArray).buffer).getFloat32(0, isLittleEndian === 1);
 }
 // for decoding data from new sensors with its id.
-function decodeSamplingData(bytes){
+function decodeSamplingData(bytes) {
     var sampleData = {};
     let byteIndex = 1;
     fieldIndex = 1;
@@ -574,19 +540,24 @@ function decodeSamplingData(bytes){
     sampleData.noofsamples = bytes[++byteIndex];
     for (byteIndex = 3; byteIndex <= loopCount; byteIndex) {
         const key = `${sampleData.parameter}${fieldIndex++}`;
-        if(bytes[byteIndex]!=0xFF){sampleData[key] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3))}else{sampleData[key] = "Error";++byteIndex}
+        if (bytes[byteIndex] != 0xFF) {
+            sampleData[key] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3))
+        } else {
+            sampleData[key] = "Error";
+            ++byteIndex
+        }
     }
     sampleData.battery = ((bytes[++byteIndex]) / 10);
     sampleData.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
     return sampleData;
 }
 // for decoding data from new sensors with its id.
-function decodeTrigerData(bytes){
+function decodeTrigerData(bytes) {
     var triggerData = {};
     var byteIndex = 1;
-    triggerData.threshould1 = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3));
-    triggerData[fieldNames[bytes[++byteIndex]]] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3));
-    triggerData.threshould2 = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3));
+    triggerData.threshould1 = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3));
+    triggerData[fieldNames[bytes[++byteIndex]]] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3));
+    triggerData.threshould2 = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3));
     // triggerData.battery = ((bytes[++byteIndex]) / 10);
     // triggerData.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
     return triggerData;
@@ -596,17 +567,27 @@ function decodeTrigerData(bytes){
 function getSensorData(bytes) {
     var sensorData = {};
     const loopCount = (bytes.length) - 6;
-    const fieldCounters = {}; 
+    const fieldCounters = {};
     let byteIndex;
-    for (byteIndex = 2; byteIndex <= loopCount; ++byteIndex) { 
+    for (byteIndex = 2; byteIndex <= loopCount; ++byteIndex) {
         let fieldName = fieldNames[bytes[byteIndex]];
         if (!fieldCounters[fieldName]) {
             fieldCounters[fieldName] = 1;
-            if(bytes[byteIndex]!=0xFF){sensorData[fieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3))}else{sensorData[fieldName] = "Error";++byteIndex} 
+            if (bytes[byteIndex] != 0xFF) {
+                sensorData[fieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3))
+            } else {
+                sensorData[fieldName] = "Error";
+                ++byteIndex
+            }
         } else {
             fieldCounters[fieldName]++;
             const indexedFieldName = `${fieldName}${fieldCounters[fieldName]}`;
-            if(bytes[byteIndex]!=0xFF){sensorData[indexedFieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]],1).toFixed(3))}else{sensorData[indexedFieldName] = "Error";++byteIndex}
+            if (bytes[byteIndex] != 0xFF) {
+                sensorData[indexedFieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3))
+            } else {
+                sensorData[indexedFieldName] = "Error";
+                ++byteIndex
+            }
         }
     }
     // sensorData.battery = ((bytes[byteIndex]) / 10);
@@ -614,16 +595,16 @@ function getSensorData(bytes) {
     return sensorData;
 }
 // for decoding data from new sensors with its id.
-function getMacSenseData(bytes){  
+function getMacSenseData(bytes) {
     if (bytes[0] === 0) {
         return decodeBootMessage(bytes); // decode boot message bytes
-    }else if(bytes[0] == 1){
+    } else if (bytes[0] == 1) {
         return getSensorData(bytes);
-    }else if(bytes[0] == 2){
+    } else if (bytes[0] == 2) {
         return decodeResponce(bytes);
-    }else if(bytes[0] == 3){
+    } else if (bytes[0] == 3) {
         return decodeTrigerData(bytes);
-    }else if(bytes[0] == 4){
+    } else if (bytes[0] == 4) {
         return decodeSamplingData(bytes);
     }
 
@@ -641,9 +622,9 @@ function encodeDownlink(input) {
             );
             break;
         case 5: // for controlling relays time
-                const relay1 = input.data.relay1 !== undefined ? input.data.relay1 : 0x03;
-                const relay2 = input.data.relay2 !== undefined ? input.data.relay2 : 0x03;
-                bytes.push(relay1, relay2);
+            const relay1 = input.data.relay1 !== undefined ? input.data.relay1 : 0x03;
+            const relay2 = input.data.relay2 !== undefined ? input.data.relay2 : 0x03;
+            bytes.push(relay1, relay2);
             break;
         case 8: // for writing coils
             bytes.push(
@@ -751,7 +732,7 @@ function encodeDownlink(input) {
             );
             break;
         case 13: // read modbus resistor value
-             bytes.push(
+            bytes.push(
                 input.data.slaveId, // 1 byte
                 input.data.functionCode, // 1 byte
                 input.data.dataType, //byte of dataType
