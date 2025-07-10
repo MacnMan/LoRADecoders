@@ -15,7 +15,13 @@ function decodeUplink(input) {
         errors: []
     };
 }
-
+// bytes to string
+function str_pad(byte) {
+    var zero = '00';
+    var hex = byte.toString(16);
+    var tmp = 2 - hex.length;
+    return zero.substr(0, tmp) + hex + "";
+}
 // decoding uploaded data
 function Decoder(bytes, port) {
     if (bytes[0] === 0) {
@@ -42,7 +48,6 @@ function decodeUplinkBytes(bytes) {
     payload.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
     return payload;
 }
-
 //
 function decodeBootMessage(bytes) {
     var boot_data = {};
