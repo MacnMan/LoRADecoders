@@ -14,7 +14,7 @@ function hexToBytes(hex) {
     return bytes;
 }
 
-const hexPayload = "011041098e8111a2c16f7f2268da1acf";  // paste raw hex payload here
+const hexPayload = "011041010581018fc124b82268da2ee9";  // paste raw hex payload here
 
 const testBytes = hexToBytes(hexPayload);
 console.dir(decodeUplink({ bytes: testBytes , port: 1 }),{ depth: null });
@@ -578,8 +578,8 @@ function decodeTrigerData(bytes) {
 }
 // Function for returning decode encoded data take 1 byte as argument last 2 bits are data type and other 6 are type sensor.
 function getDataTypeAndSensor(encodedByte) {
-    let dataType = (encodedByte >> 6) & 0x03; // Extract 2-bit Data Type
-    let numRegisters = encodedByte & 0x3F; // Extract 6-bit Register Count
+    let numRegisters = (encodedByte >> 6) & 0x03; // Extract 2-bit Data Type
+    let dataType = encodedByte & 0x3F; // Extract 6-bit Register Count
     return {
         dataType,
         numRegisters
@@ -591,7 +591,7 @@ function getSensorData(bytes) {
     var sensorData = {};
     const loopCount = (bytes.length) - 6;
     let byteIndex;
-    for (byteIndex = 1; byteIndex <= loopCount; ++byteIndex) {
+    for (byteIndex = 1; byteIndex <= loopCount; ) {
         var decodedData = getDataTypeAndSensor(bytes[++byteIndex]);
         var dataType = decodedData.dataType;
         var numRegisters = decodedData.numRegisters;
@@ -609,12 +609,12 @@ function getSensorData(bytes) {
                 case "humidity":
                     sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
                     break
-                                case "humidity":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
+                case "pressure":
+                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/10).toFixed(2))
                     break
                 }      
             break;
-            case 2: // uint16
+            case 2: // uint32
                     sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])).toFixed(2))
             break;
             case 3: // float32
