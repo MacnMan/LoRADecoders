@@ -15,7 +15,6 @@ function decodeUplink(input) {
         errors: []
     };
 }
-
 // bytes to string
 function str_pad(byte) {
     var zero = '00';
@@ -23,7 +22,6 @@ function str_pad(byte) {
     var tmp = 2 - hex.length;
     return zero.substr(0, tmp) + hex + "";
 }
-
 // decoding uploaded data
 function Decoder(bytes, port) {
     if (bytes[0] === 0) {
@@ -40,25 +38,14 @@ function Decoder(bytes, port) {
 //
 function decodeUplinkBytes(bytes) {
     var payload = {};
-    var startIndex = 2; // adjust if data starts from a different index
-    var matrix = [];
+    var fieldIndex = 0; // adjust if data starts from a different index
     payload.messageType = "Payload";
-    // Get device ID
-    payload.deviceId = bytes[1];
-    if(bytes[2] == 255){
-        payload.status = "Sensor Error";
-        return payload;
-    }
-    // Create 8x8 matrix from the bytes
-    for (var row = 0; row < 8; row++) {
-        var rowData = [];
-        for (var col = 0; col < 8; col++) {
-            var index = startIndex + row * 8 + col;
-            rowData.push(bytes[index]);
-        }
-        matrix.push(rowData);
-    }
-    payload.matrix = matrix;
+    // Get device IDcch
+    payload.deviceId = bytes[++fieldIndex];
+    payload.h2sppm = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 100);
+    payload.sen_voltage = (((bytes[++fieldIndex] << 8) + bytes[++fieldIndex]) / 100);
+    payload.battery = bytes[++fieldIndex]/10;
+    payload.Systimestamp = (bytes[++fieldIndex] << 24) + (bytes[++fieldIndex] << 16) + (bytes[++fieldIndex] << 8) + bytes[++fieldIndex];
     return payload;
 }
 
