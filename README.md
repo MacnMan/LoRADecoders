@@ -128,7 +128,7 @@ To write to a Modbus register, specify the slave ID, register address, and value
     "stopTime": 7200,
     "dayData": 127,
     "relayStatus": 1,
-    "triggerType": 2,
+    "alarmType": 2,
     "enable": 1,
     "onTime": 60,
     "offTime": 120
@@ -143,7 +143,7 @@ To write to a Modbus register, specify the slave ID, register address, and value
     "stopTime": 7200,
     "dayData": 127,
     "relayStatus": 1,
-    "triggerType": 3,
+    "alarmType": 3,
     "enable": 1,
     "sensorValue": 85,
     "level": 2,
