@@ -14,7 +14,7 @@ function hexToBytes(hex) {
     return bytes;
 }
 
-const hexPayload = "011041010581018fc124b82268da2ee9";  // paste raw hex payload here
+const hexPayload = "040102050f33081e68e112ae";  // paste raw hex payload here
 
 const testBytes = hexToBytes(hexPayload);
 console.dir(decodeUplink({ bytes: testBytes , port: 1 }),{ depth: null });
@@ -300,7 +300,6 @@ function decodeUplinkBytes(bytes, isResponce) {
                 rs485_data[key] = "Slave Error";
                 break;
         }
-
         fieldIndex++;
     }
 
