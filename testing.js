@@ -1,10 +1,3 @@
-/**
- * LoRaWAN Decoder V5.0 for LoRaWAN Controllers and Nodes
- * 29-Sep-2025
- * Macnman Technologies Pvt.Ltd
- * Writen By : Prabhudayal Patel
- **/
-
 // Convert hex string to byte array
 function hexToBytes(hex) {
     const bytes = [];
@@ -18,6 +11,19 @@ const hexPayload = "AQABArwjAAAjAADAwMDAwMDAwMDAwMDAwMDAwCJo/yMq";  // paste raw
 
 const testBytes = hexToBytes(hexPayload);
 console.dir(decodeUplink({ bytes: testBytes , port: 1 }),{ depth: null });
+
+/**
+ * LoRaWAN Decoder V4.0 for LoRaWAN Controllers and Nodes
+ * Macnman Technologies Pvt.Ltd
+ * Writen By : MACNMAN
+ * 
+ **/
+// const data = [
+// 0x01, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0x68, 0x5A, 0x46, 0xE9
+// ];
+
+// console.log(decodeUplink({ bytes: data , port: 1 }));
+// console.dir(decodeUplink({ bytes: data , port: 1 }),{ depth: null });
 const devTypes = {
     0: "RS485_Node",
     1: "Analog_Node",
@@ -25,6 +31,8 @@ const devTypes = {
     3: "Analog_Controller",
     16: "MacSense_V2.0",
 };
+//
+var fieldNames = ["level", "temperature", "humidity", "pressure", "windspeed", "winddirection", "rainfall", "snowfall", "co2", "pm2.5", "levelmm", "levelcm", "levelm3"];
 //
 function decodeUplink(input) {
     return {
@@ -52,13 +60,6 @@ function Decoder(bytes, port) {
         3: getAnalogData,
         16: getMacSenseData,
     };
-    const devTypes = {
-    0: "RS485_Node",
-    1: "Analog_Node",
-    2: "RS485_Controller",
-    3: "Analog_Controller",
-    16: "MacSense_V2.0",
-};
     const devType = devTypes[bytes[1]];
     if (devType) {
         // decode.devType = devType;
@@ -95,7 +96,7 @@ function getDeviceinfo(bytes, port) {
         devInfo.protocall = "LoRaWAN",
         devInfo.uplinkPort = port,
         devInfo.deviceID = bytes[1],
-        // devInfo.devType = devTypes[bytes[1]];
+        devInfo.devType = devTypes[bytes[1]];
     byteIndex = bytes.length - 6;
     devInfo.battery = ((bytes[++byteIndex]) / 10);
     devInfo.Systimestamp = (bytes[++byteIndex] << 24) + (bytes[++byteIndex] << 16) + (bytes[++byteIndex] << 8) + bytes[++byteIndex];
@@ -300,6 +301,7 @@ function decodeUplinkBytes(bytes, isResponce) {
                 rs485_data[key] = "Slave Error";
                 break;
         }
+
         fieldIndex++;
     }
 
@@ -575,50 +577,31 @@ function decodeTrigerData(bytes) {
     return triggerData;
 
 }
-// Function for returning decode encoded data take 1 byte as argument last 2 bits are data type and other 6 are type sensor.
-function getDataTypeAndSensor(encodedByte) {
-    let numRegisters = (encodedByte >> 6) & 0x03; // Extract 2-bit Data Type
-    let dataType = encodedByte & 0x3F; // Extract 6-bit Register Count
-    return {
-        dataType,
-        numRegisters
-    };
-}
 // Returns parameter and its value.
 function getSensorData(bytes) {
-    var fieldNames = ["level", "temperature", "humidity", "pressure", "windspeed", "winddirection", "rainfall", "snowfall", "co2", "pm2.5", "levelmm", "levelcm", "levelm3"];
     var sensorData = {};
     const loopCount = (bytes.length) - 6;
+    const fieldCounters = {};
     let byteIndex;
-    for (byteIndex = 1; byteIndex <= loopCount; ) {
-        var decodedData = getDataTypeAndSensor(bytes[++byteIndex]);
-        var dataType = decodedData.dataType;
-        var numRegisters = decodedData.numRegisters;
-        let fieldName = fieldNames[numRegisters];
-        switch (dataType) {
-            case 0: // error
-                    sensorData[fieldName] = "Error";
-                    ++byteIndex;
-            break;
-            case 1: // uint16/100
-                switch (fieldName) {
-                case "temperature":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
-                    break
-                case "humidity":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
-                    break
-                case "pressure":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/10).toFixed(2))
-                    break
-                }      
-            break;
-            case 2: // uint32
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])).toFixed(2))
-            break;
-            case 3: // float32
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
-            break;
+    for (byteIndex = 2; byteIndex <= loopCount; ++byteIndex) {
+        let fieldName = fieldNames[bytes[byteIndex]];
+        if (!fieldCounters[fieldName]) {
+            fieldCounters[fieldName] = 1;
+            if (bytes[byteIndex] != 0xFF) {
+                sensorData[fieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3))
+            } else {
+                sensorData[fieldName] = "Error";
+                ++byteIndex
+            }
+        } else {
+            fieldCounters[fieldName]++;
+            const indexedFieldName = `${fieldName}${fieldCounters[fieldName]}`;
+            if (bytes[byteIndex] != 0xFF) {
+                sensorData[indexedFieldName] = parseFloat(GetFloatFromBytes([bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex], bytes[++byteIndex]], 1).toFixed(3))
+            } else {
+                sensorData[indexedFieldName] = "Error";
+                ++byteIndex
+            }
         }
     }
     // sensorData.battery = ((bytes[byteIndex]) / 10);
