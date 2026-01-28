@@ -6,8 +6,8 @@
  **/
 
 function Decode(fPort, bytes) {
-
     return decodeUplink(bytes);
+
 }
 
 // Convert hex string to byte array
@@ -19,10 +19,13 @@ function hexToBytes(hex) {
     return bytes;
 }
 
- const hexPayload = "01102109376127a86127a881004022693d2150";  // paste raw hex payload here
+// const hexPayload = "0110204023697a161a";  // paste raw hex payload here
 
 // const testBytes = hexToBytes(hexPayload);
 // console.dir(decodeUplink({ bytes: testBytes , port: 1 }),{ depth: null });
+
+
+
 const devTypes = {
     0: "RS485_Node",
     1: "Analog_Node",
@@ -74,8 +77,8 @@ function Decoder(bytes, port) {
                     decode.boot = parser(bytes);
                     break;
                 case 1:
-                    decode.payload = parser(bytes);
                     decode.deviceinfo = getDeviceinfo(bytes, port);
+                    decode.devicedata = parser(bytes);
                     break;
                 case 2:
                     decode.responce = parser(bytes);
@@ -593,9 +596,10 @@ function getDataTypeAndSensor(encodedByte) {
 function getSensorData(bytes) {
     var fieldNames = ["level", "temperature", "humidity", "pressure", "windspeed", "winddirection", "rainfall", "snowfall", "co2", "pm2.5", "levelmm", "levelcm", "levelm3"];
     var sensorData = {};
-    const loopCount = (bytes.length) - 6;
+    bytes.splice(-5);
+    const loopCount = (bytes.length);
     let byteIndex;
-    for (byteIndex = 1; byteIndex <= loopCount; ) {
+    for (byteIndex = 1; byteIndex < loopCount-1; ) {
         var decodedData = getDataTypeAndSensor(bytes[++byteIndex]);
         var dataType = decodedData.dataType;
         var numRegisters = decodedData.numRegisters;
@@ -603,7 +607,6 @@ function getSensorData(bytes) {
         switch (dataType) {
             case 0: // error
                     sensorData[fieldName] = "Error";
-                    ++byteIndex;
             break;
             case 1: // uint16/100
                 switch (fieldName) {
@@ -614,6 +617,9 @@ function getSensorData(bytes) {
                     sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
                     break
                 case "pressure":
+                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/10).toFixed(2))
+                    break
+                case "level":
                     sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/10).toFixed(2))
                     break
                 }      
@@ -795,3 +801,4 @@ function encodeDownlink(input) {
         bytes: bytes
     };
 }
+
