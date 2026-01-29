@@ -30,7 +30,7 @@ application/{applicationId}/device/{devEui}/command/down
 
 ---
 
-## 1️⃣ Change Transmission Interval  
+## 1. Change Transmission Interval  
 **FPort:** `06`
 
 ### Description
@@ -59,7 +59,7 @@ application/{applicationId}/device/{devEui}/command/down
 
 ---
 
-## 2️⃣ Relay Control  
+## 2. Relay Control  
 **FPort:** `05`
 
 ### Description
@@ -106,36 +106,6 @@ application/{applicationId}/device/{devEui}/command/down
   }
 }
 ```
-
----
-
-## 3️⃣ Read RS485 (Modbus) Data  
-**FPort:** `10`
-
-### Data Type Mapping
-| Value | Data Type |
-|-----|-----------|
-| 00 | INT16 |
-| 01 | UINT16 |
-| 02 | INT32 (MSB) |
-| 03 | INT32 (LSB) |
-| 04 | FLOAT32 (MSB) |
-| 05 | FLOAT32 (LSB) |
-
-```json
-{
-  "Field": 1,
-  "slaveId": 2,
-  "functionCode": 3,
-  "Enable": 1,
-  "dataType": 2,
-  "numberOfParameters": 2,
-  "Registeraddress": 3036,
-  "fPort": 10
-}
-```
-
----
 
 
 
