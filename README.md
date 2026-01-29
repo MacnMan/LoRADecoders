@@ -102,8 +102,8 @@ This payload is used for reading RS485 data from a Modbus device.
 
   **Examples for MQTT JSON :**
   ### Topic : application/f2972f7d-2d60-4b8f-9a49-de887bb48e05/device/0080e11505ca2663/command/down
-  #### where f2972f7d-2d60-4b8f-9a49-de887bb48e05  is application id
-  #### where 0080e11505ca2663  is device eui
+  # where f2972f7d-2d60-4b8f-9a49-de887bb48e05  is application id
+  # where 0080e11505ca2663  is device eui
 
   ```json
   {
