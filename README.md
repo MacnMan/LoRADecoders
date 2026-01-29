@@ -135,9 +135,6 @@ This payload is used for reading RS485 data from a Modbus device.
 ```
 
   **Examples for MQTT JSON :**
-  # Topic : application/f2972f7d-2d60-4b8f-9a49-de887bb48e05/device/0080e11505ca2663/command/down
-  # where f2972f7d-2d60-4b8f-9a49-de887bb48e05  is application id
-  # where 0080e11505ca2663  is device eui
 
   ```json
   {
@@ -169,7 +166,8 @@ To write to a Modbus register, specify the slave ID, register address, and value
       "slaveId": 4,
       "numberofreg": 1,
       "address": 0,
-      "value": 255
+      "value": 255,
+      "fPort":9
   }
   ```
 - **Writing to a coil (FPort: 8):**
@@ -178,7 +176,8 @@ To write to a Modbus register, specify the slave ID, register address, and value
       "slaveId": 10,
       "numberofreg": 1,
       "address": 0,
-      "value": 65280
+      "value": 65280,
+      "fPort":8
   }
   ```
 
@@ -194,7 +193,8 @@ To write to a Modbus register, specify the slave ID, register address, and value
     "dayData": 127,
     "relayStatus": 1,
     "alarmType": 1,
-    "enable": 1
+    "enable": 1,
+    "fPort":11
 }
 ```
 
@@ -209,7 +209,8 @@ To write to a Modbus register, specify the slave ID, register address, and value
     "alarmType": 2,
     "enable": 1,
     "onTime": 60,
-    "offTime": 120
+    "offTime": 120,
+    "fPort":11
 }
 ```
 
@@ -225,21 +226,24 @@ To write to a Modbus register, specify the slave ID, register address, and value
     "enable": 1,
     "sensorValue": 85,
     "level": 2,
-    "rs485Field": 1
+    "rs485Field": 1,
+    "fPort":11
 }
 ```
 
 ### 5.4 Reading an Alarm Configuration (FPort: 14)
 ```json
 {
-    "index": 1
+    "index": 1,
+    "fPort":14
 }
 ```
 
 ### 5.4 Reading an Modbus Configuration (FPort: 15)
 ```json
 {
-    "index": 1
+    "index": 1,
+    "fPort":15
 }
 ```
 
@@ -256,7 +260,8 @@ Baud rate and parity settings for RS485 RTU serial communication.
 ```json
 {
     "baud": 9600,
-    "pairity": 1
+    "pairity": 1,
+    "fPort":12
 }
 ```
 
