@@ -14,7 +14,8 @@ To modify the transmission interval time of a LoRaWAN device, convert the desire
 **Example:** To set the interval to **10 minutes** (600 seconds):
 ```json
 {
-    "txTime": 600
+    "txTime": 600,
+    "fPort": 6
 }
 ```
 
@@ -25,35 +26,54 @@ This payload is used to turn on or off relays in both **single-phase** and **thr
 - **Single-phase:** Relay1 and Relay2 control independent loads.
 - **Three-phase:** Relay1 controls the entire three-phase application.
 
-**Examples:**
+**Examples for LNS JSON :**
 - **Turn on Relay1:**
   ```json
   {
-      "relay1": 1
+      "relay1": 1,
+      "fPort": 5
   }
   ```
 - **Turn off Relay2:**
   ```json
   {
-      "relay2": 0
+      "relay2": 0,
+      "fPort": 5
   }
   ```
 - **Turn on both Relay1 and Relay2:**
   ```json
   {
       "relay1": 1,
-      "relay2": 1
+      "relay2": 1,
+      "fPort": 5
   }
   ```
 - **Turn off both Relay1 and Relay2:**
   ```json
   {
       "relay1": 0,
-      "relay2": 0
+      "relay2": 0,
+      "fPort": 5
   }
   ```
 
----
+  **Examples for MQTT JSON :**
+  ### Topic : application/f2972f7d-2d60-4b8f-9a49-de887bb48e05/device/0080e11505ca2663/command/down
+  #### where f2972f7d-2d60-4b8f-9a49-de887bb48e05  is application id
+  #### where 0080e11505ca2663  is device eui
+
+  ```json
+  {
+    "devEui": "0080e11505ca2663",                
+    "confirmed": true,                                
+    "object": {
+        "relay1": 0,
+        "relay2": 0,
+        "fPort": 5
+    }
+  }
+  ---
 
 ## 3. Reading RS485 Data (FPort: 10)
 This payload is used for reading RS485 data from a Modbus device.
@@ -66,7 +86,7 @@ This payload is used for reading RS485 data from a Modbus device.
 - `04`: FLOAT32 [MSB]
 - `05`: FLOAT32 [LSB]
 
-**Example:**
+**Example Chirpstack JSON :**
 ```json
 {
   "Field": 1,
@@ -75,9 +95,32 @@ This payload is used for reading RS485 data from a Modbus device.
   "Enable": 1,
   "dataType": 2,
   "numberOfParameters": 2,
-  "Registeraddress": 3036
+  "Registeraddress": 3036,
+  "fPort": 10
 }
 ```
+
+  **Examples for MQTT JSON :**
+  ### Topic : application/f2972f7d-2d60-4b8f-9a49-de887bb48e05/device/0080e11505ca2663/command/down
+  #### where f2972f7d-2d60-4b8f-9a49-de887bb48e05  is application id
+  #### where 0080e11505ca2663  is device eui
+
+  ```json
+  {
+    "devEui": "0080e11505ca2663",                
+    "confirmed": true,                                
+    "object": {
+        "Field": 1,
+        "slaveId": 2,
+        "functionCode": 3,
+        "Enable": 1,
+        "dataType": 2,
+        "numberOfParameters": 2,
+        "Registeraddress": 3036,
+        "fPort": 10
+    }
+  }
+  ---
 
 ---
 

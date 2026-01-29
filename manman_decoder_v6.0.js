@@ -5,9 +5,9 @@
  * Writen By : Prabhudayal Patel
  **/
 
+// prototype for milesight gateway
 function Decode(fPort, bytes) {
     return decodeUplink(bytes);
-
 }
 
 // Convert hex string to byte array
@@ -653,7 +653,7 @@ function getMacSenseData(bytes) {
 }
 // downlink Encoder.
 function encodeDownlink(input) {
-    const portNumber = input.fPort;
+    const portNumber = input.data.fPort;
     let bytes = [];
 
     switch (portNumber) {
