@@ -137,6 +137,8 @@ application/{applicationId}/device/{devEui}/command/down
 
 ---
 
+
+
 ## 3. Reading RS485 Data (FPort: 10)
 This payload is used for reading RS485 data from a Modbus device.
 
