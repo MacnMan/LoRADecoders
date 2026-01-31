@@ -602,25 +602,25 @@ function getSensorData(bytes) {
     for (byteIndex = 1; byteIndex < loopCount-1; ) {
         var decodedData = getDataTypeAndSensor(bytes[++byteIndex]);
         var dataType = decodedData.dataType;
-        var numRegisters = decodedData.numRegisters;
-        let fieldName = fieldNames[numRegisters];
+        var fieldIndex = decodedData.numRegisters;
+        let fieldName = fieldNames[fieldIndex];
         switch (dataType) {
-            case 0: // error
+            case 0: // error if data type is 0
                     sensorData[fieldName] = "Error";
             break;
-            case 1: // uint16/100
+            case 1: // if data type is 1 value will be (int16/100) or (int16/10) with signed
                 switch (fieldName) {
                 case "temperature":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 100).toFixed(2));
                     break
                 case "humidity":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/100).toFixed(2))
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 100).toFixed(2));
                     break
                 case "pressure":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/10).toFixed(2))
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 10).toFixed(2));
                     break
                 case "level":
-                    sensorData[fieldName] = parseFloat((((bytes[++byteIndex] << 8) | bytes[++byteIndex])/10).toFixed(2))
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 10).toFixed(2));
                     break
                 }      
             break;
