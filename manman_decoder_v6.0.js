@@ -611,16 +611,16 @@ function getSensorData(bytes) {
             case 1: // if data type is 1 value will be (int16/100) or (int16/10) with signed
                 switch (fieldName) {
                 case "temperature":
-                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 100).toFixed(2));
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 100).toFixed(3));
                     break
                 case "humidity":
-                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 100).toFixed(2));
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 100).toFixed(3));
                     break
                 case "pressure":
-                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 10).toFixed(2));
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 10).toFixed(3));
                     break
                 case "level":
-                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 10).toFixed(2));
+                    sensorData[fieldName] = parseFloat(((((bytes[++byteIndex] << 8) | bytes[++byteIndex]) << 16 >> 16) / 10).toFixed(3));
                     break
                 }      
             break;
